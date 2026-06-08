@@ -5,5 +5,12 @@
     "email": "amanda@test.com",
     "password": "$2b$12$DEkuFYM5zRfPT9qZiCBu..zdOu1iBT7RAWLalxZdZgYoA9DMIjYk2",
     "role": "admin"
+  },
+  "8b38888c-5586-4bf3-841c-ae79c1022be5": {
+    "id": "8b38888c-5586-4bf3-841c-ae79c1022be5",
+    "name": "Amanda",
+    "email": "amanda3@test.com",
+    "password": "$2b$12$1vmSwB31GMVaT4fOwPvtg.fmObxPhzP43ORnUQW19vEegjiIbl17m",
+    "role": "admin"
   }
 }
