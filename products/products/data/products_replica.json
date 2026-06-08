@@ -4,5 +4,11 @@
     "name": "Teclado",
     "price": 199.9,
     "stock": 50
+  },
+  "c1d0d348-0323-4963-865e-12ae618f5dbc": {
+    "id": "c1d0d348-0323-4963-865e-12ae618f5dbc",
+    "name": "Notebook",
+    "price": 3500.0,
+    "stock": 5
   }
 }

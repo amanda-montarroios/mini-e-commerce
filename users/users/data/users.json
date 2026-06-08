@@ -12,5 +12,12 @@
     "email": "amanda3@test.com",
     "password": "$2b$12$1vmSwB31GMVaT4fOwPvtg.fmObxPhzP43ORnUQW19vEegjiIbl17m",
     "role": "admin"
+  },
+  "a40c8540-3de5-44ce-9321-814f06b91b62": {
+    "id": "a40c8540-3de5-44ce-9321-814f06b91b62",
+    "name": "Teste Gateway",
+    "email": "gw@test.com",
+    "password": "$2b$12$TULV3VdJQbujo66m3Kc1cekxaAe.cjN2VXHsXh16N1fdlMFwq.yR6",
+    "role": "admin"
   }
 }
