@@ -124,16 +124,3 @@ docker-compose start orders
 ```
 
 ---
-
-## Estrutura do projeto
-
-```
-mini-e-commerce/
-├── certs/               ← certificados TLS
-├── gateway/             ← API Gateway (porta 5000)
-├── users/               ← Serviço de Usuários (porta 5001)
-├── products/            ← Serviço de Produtos (porta 5002 e 5012)
-├── orders/              ← Serviço de Pedidos (porta 5003)
-├── docker-compose.yml
-└── README_execucao.md
-```
