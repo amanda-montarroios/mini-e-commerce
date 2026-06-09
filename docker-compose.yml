@@ -9,17 +9,21 @@ services:
     ports: ["5000:5000"]
     environment:
       <<: *jwt
-      USERS_URL: http://users:5001
-      PRODUCTS_URL: http://products:5002
-      REPLICA_URL: http://products-replica:5012
-      ORDERS_URL: http://orders:5003
+      USERS_URL: https://users:5001
+      PRODUCTS_URL: https://products:5002
+      REPLICA_URL: https://products-replica:5012
+      ORDERS_URL: https://orders:5003
+    volumes: ["./certs:/app/certs"]
     depends_on: [users, products, products-replica, orders]
 
   users:
     build: ./users
     ports: ["5001:5001"]
     environment: { <<: *jwt }
-    volumes: ["./users/data:/app/users/data"]
+    volumes:
+      - "./users/data:/app/data"
+      - "./certs:/app/certs"
+    command: uvicorn main:app --host 0.0.0.0 --port 5001 --ssl-keyfile /app/certs/key.pem --ssl-certfile /app/certs/cert.pem
 
   products:
     build: ./products
@@ -27,7 +31,10 @@ services:
     environment:
       <<: *jwt
       REPLICA_ID: primary
-    volumes: ["./products/data:/app/products/data"]
+    volumes:
+      - "./products/data:/app/data"
+      - "./certs:/app/certs"
+    command: uvicorn main:app --host 0.0.0.0 --port 5002 --ssl-keyfile /app/certs/key.pem --ssl-certfile /app/certs/cert.pem
 
   products-replica:
     build: ./products
@@ -35,11 +42,16 @@ services:
     environment:
       <<: *jwt
       REPLICA_ID: replica
-    volumes: ["./products/data:/app/products/data"]
-    command: uvicorn main:app --host 0.0.0.0 --port 5012
+    volumes:
+      - "./products/data:/app/data"
+      - "./certs:/app/certs"
+    command: uvicorn main:app --host 0.0.0.0 --port 5012 --ssl-keyfile /app/certs/key.pem --ssl-certfile /app/certs/cert.pem
 
   orders:
     build: ./orders
     ports: ["5003:5003"]
     environment: { <<: *jwt }
-    volumes: ["./orders/data:/app/orders/data"]
+    volumes:
+      - "./orders/data:/app/data"
+      - "./certs:/app/certs"
+    command: uvicorn main:app --host 0.0.0.0 --port 5003 --ssl-keyfile /app/certs/key.pem --ssl-certfile /app/certs/cert.pem

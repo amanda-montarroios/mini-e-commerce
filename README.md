@@ -1,77 +1,139 @@
 # Mini E-commerce Distribuído — Instruções de Execução
 
+## Pré-requisitos
+
+- Python 3.11+
+- Docker e Docker Compose (para a Opção 1)
+- OpenSSL (já incluso no Git for Windows)
+
+## Gerar certificados TLS (obrigatório antes de subir)
+
+```bash
+cd certs
+openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
+cd ..
+```
+
+No Windows (PowerShell):
+```powershell
+cd certs
+& "C:\Program Files\Git\usr\bin\openssl.exe" req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
+cd ..
+```
+
+---
+
 ## Opção 1: Docker Compose (recomendado)
 
 ```bash
 docker-compose up --build
 ```
 
-Todos os serviços sobem automaticamente.
+Todos os serviços sobem automaticamente com TLS habilitado.
+
+---
 
 ## Opção 2: Manual (sem Docker)
 
 Instale as dependências em cada serviço:
-```bash
-cd users && pip install -r requirements.txt
-cd ../products && pip install -r requirements.txt
-cd ../orders && pip install -r requirements.txt
-cd ../gateway && pip install -r requirements.txt
+
+```powershell
+cd users; pip install -r requirements.txt; cd ..
+cd products; pip install -r requirements.txt; cd ..
+cd orders; pip install -r requirements.txt; cd ..
+cd gateway; pip install -r requirements.txt; cd ..
 ```
 
 Suba cada serviço em um terminal separado:
-```bash
-# Terminal 1
-JWT_SECRET=segredo uvicorn users.main:app --port 5001
 
-# Terminal 2
-JWT_SECRET=segredo REPLICA_ID=primary uvicorn products.main:app --port 5002
+```powershell
+# Terminal 1 — Usuários
+$env:JWT_SECRET="segredo"; uvicorn main:app --port 5001 --ssl-keyfile ../certs/key.pem --ssl-certfile ../certs/cert.pem
 
-# Terminal 3
-JWT_SECRET=segredo REPLICA_ID=replica uvicorn products.main:app --port 5012
+# Terminal 2 — Produtos (primária)
+$env:JWT_SECRET="segredo"; $env:REPLICA_ID="primary"; uvicorn main:app --port 5002 --ssl-keyfile ../certs/key.pem --ssl-certfile ../certs/cert.pem
 
-# Terminal 4
-JWT_SECRET=segredo uvicorn orders.main:app --port 5003
+# Terminal 3 — Produtos (réplica)
+$env:JWT_SECRET="segredo"; $env:REPLICA_ID="replica"; uvicorn main:app --port 5012 --ssl-keyfile ../certs/key.pem --ssl-certfile ../certs/cert.pem
 
-# Terminal 5
-JWT_SECRET=segredo uvicorn gateway.main:app --port 5000
+# Terminal 4 — Pedidos
+$env:JWT_SECRET="segredo"; uvicorn main:app --port 5003 --ssl-keyfile ../certs/key.pem --ssl-certfile ../certs/cert.pem
+
+# Terminal 5 — Gateway
+$env:JWT_SECRET="segredo"; uvicorn main:app --port 5000
 ```
 
-## Testando
+---
 
-```bash
+## Acessando o sistema
+
+| Recurso | URL |
+|---|---|
+| Dashboard de monitoramento | http://localhost:5000/dashboard |
+| Health do gateway | http://localhost:5000/health |
+| API de usuários | http://localhost:5000/users/... |
+| API de produtos | http://localhost:5000/products |
+| API de pedidos | http://localhost:5000/orders |
+
+---
+
+## Testando via PowerShell
+
+```powershell
 # 1. Registrar usuário admin
-curl -X POST http://localhost:5000/users/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Admin","email":"admin@test.com","password":"123","role":"admin"}'
+Invoke-RestMethod -Uri http://localhost:5000/users/register `
+  -Method POST -ContentType "application/json" `
+  -Body '{"name":"Admin","email":"admin@test.com","password":"123","role":"admin"}'
 
-# 2. Login
-curl -X POST http://localhost:5000/users/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@test.com","password":"123"}'
-# Copie o token retornado
+# 2. Login e guardar token
+$token = (Invoke-RestMethod -Uri http://localhost:5000/users/login `
+  -Method POST -ContentType "application/json" `
+  -Body '{"email":"admin@test.com","password":"123"}').token
 
 # 3. Criar produto (requer token admin)
-curl -X POST http://localhost:5000/products \
-  -H "Authorization: Bearer SEU_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Teclado","price":199.90,"stock":50}'
+$produto = Invoke-RestMethod -Uri http://localhost:5000/products `
+  -Method POST -ContentType "application/json" `
+  -Headers @{Authorization="Bearer $token"} `
+  -Body '{"name":"Teclado","price":199.90,"stock":50}'
 
 # 4. Listar produtos
-curl http://localhost:5000/products
+Invoke-RestMethod http://localhost:5000/products
 
 # 5. Criar pedido
-curl -X POST http://localhost:5000/orders \
-  -H "Authorization: Bearer SEU_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"ID_DO_USUARIO","product_id":"ID_DO_PRODUTO","quantity":1}'
+Invoke-RestMethod -Uri http://localhost:5000/orders `
+  -Method POST -ContentType "application/json" `
+  -Headers @{Authorization="Bearer $token"} `
+  -Body "{`"user_id`":`"ID_DO_USUARIO`",`"product_id`":`"$($produto.id)`",`"quantity`":1}"
 ```
+
+---
 
 ## Simular falha no heartbeat
 
-Derrube um serviço e observe os logs do gateway:
 ```bash
+# Derruba o serviço de pedidos
 docker-compose stop orders
-# Aguarde 10s e tente acessar /orders — retornará 503
+
+# Aguarde 10s — o gateway registra a falha no log
+# Acesse http://localhost:5000/dashboard para ver o status offline
+# Tente acessar /orders — retornará 503
+
+# Sobe novamente
 docker-compose start orders
-# O gateway registra a recuperação
+# Após 10s o gateway registra a recuperação e o dashboard volta a verde
+```
+
+---
+
+## Estrutura do projeto
+
+```
+mini-e-commerce/
+├── certs/               ← certificados TLS
+├── gateway/             ← API Gateway (porta 5000)
+├── users/               ← Serviço de Usuários (porta 5001)
+├── products/            ← Serviço de Produtos (porta 5002 e 5012)
+├── orders/              ← Serviço de Pedidos (porta 5003)
+├── docker-compose.yml
+└── README_execucao.md
 ```

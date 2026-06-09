@@ -8,9 +8,9 @@ bearer = HTTPBearer()
 
 SECRET = os.getenv("JWT_SECRET", "supersecret")
 REPLICA_ID = os.getenv("REPLICA_ID", "primary")
-DB_PATH = f"products/data/products_{REPLICA_ID}.json"
+DB_PATH = f"data/products_{REPLICA_ID}.json"
 
-os.makedirs("products/data", exist_ok=True)
+os.makedirs("data", exist_ok=True)
 
 def load_db():
     if not os.path.exists(DB_PATH):

@@ -8,9 +8,9 @@ app = FastAPI()
 bearer = HTTPBearer()
 
 SECRET = os.getenv("JWT_SECRET", "supersecret")
-DB_PATH = "users/data/users.json"
+DB_PATH = "data/users.json"
 
-os.makedirs("users/data", exist_ok=True)
+os.makedirs("data", exist_ok=True)
 
 def load_db():
     if not os.path.exists(DB_PATH):
