@@ -1,0 +1,45 @@
+version: "3.9"
+
+x-jwt: &jwt
+  JWT_SECRET: "minha_chave_secreta_super_segura"
+
+services:
+  gateway:
+    build: ./gateway
+    ports: ["5000:5000"]
+    environment:
+      <<: *jwt
+      USERS_URL: http://users:5001
+      PRODUCTS_URL: http://products:5002
+      REPLICA_URL: http://products-replica:5012
+      ORDERS_URL: http://orders:5003
+    depends_on: [users, products, products-replica, orders]
+
+  users:
+    build: ./users
+    ports: ["5001:5001"]
+    environment: { <<: *jwt }
+    volumes: ["./users/data:/app/users/data"]
+
+  products:
+    build: ./products
+    ports: ["5002:5002"]
+    environment:
+      <<: *jwt
+      REPLICA_ID: primary
+    volumes: ["./products/data:/app/products/data"]
+
+  products-replica:
+    build: ./products
+    ports: ["5012:5012"]
+    environment:
+      <<: *jwt
+      REPLICA_ID: replica
+    volumes: ["./products/data:/app/products/data"]
+    command: uvicorn main:app --host 0.0.0.0 --port 5012
+
+  orders:
+    build: ./orders
+    ports: ["5003:5003"]
+    environment: { <<: *jwt }
+    volumes: ["./orders/data:/app/orders/data"]
